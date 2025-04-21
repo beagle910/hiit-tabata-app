@@ -72,4 +72,142 @@ const App = () => {
     return () => clearInterval(timer);
   }, [isRunning, currentPhase, currentCircuit, highIntensity, lowIntensity, circuits, warmup, cooldown]);
 
-  const format
+  const formatTime = (seconds) => {
+    const min = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const sec = (seconds % 60).toString().padStart(2, '0');
+    return `${min}:${sec}`;
+  };
+
+  const handleDone = () => {
+    if (!isRunning) {
+      const timerConfig = {
+        name: timerName,
+        high: highIntensity,
+        low: lowIntensity,
+        circuits,
+        warmup,
+        cooldown,
+      };
+      localStorage.setItem('hiitTimer', JSON.stringify(timerConfig));
+      setIsRunning(true);
+      setCurrentCircuit(0);
+      if (warmup > 0) {
+        setCurrentPhase('warmup');
+        setTimeLeft(warmup);
+      } else {
+        setCurrentPhase('high');
+        setTimeLeft(highIntensity);
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setIsRunning(false);
+    setCurrentPhase(null);
+    setTimeLeft(0);
+    setCurrentCircuit(0);
+  };
+
+  const phaseColors = {
+    warmup: 'text-blue-500',
+    high: 'text-red-500',
+    low: 'text-green-500',
+    cooldown: 'text-yellow-500',
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col p-4">
+      <div className="flex justify-between text-sm text-gray-400 mb-4">
+        <span>{new Date().toLocaleTimeString()}</span>
+        <span>Wi-Fi</span>
+      </div>
+      <div className="flex justify-between mb-6">
+        <button onClick={handleCancel} className="text-red-500 font-medium">
+          Cancel
+        </button>
+        <button
+          onClick={handleDone}
+          className={`font-medium ${isRunning ? 'text-gray-500' : 'text-green-500'}`}
+          disabled={isRunning}
+        >
+          Done
+        </button>
+      </div>
+      {isRunning && (
+        <div className="text-center mb-6">
+          <div className={`text-4xl font-bold ${phaseColors[currentPhase]}`}>
+            {currentPhase?.toUpperCase()}: {formatTime(timeLeft)}
+          </div>
+          <div className="text-lg text-gray-400">
+            Circuit {currentCircuit + 1} of {circuits}
+          </div>
+        </div>
+      )}
+      {!isRunning && (
+        <>
+          <div className="mb-6">
+            <input
+              type="text"
+              value={timerName}
+              onChange={(e) => setTimerName(e.target.value)}
+              className="w-full bg-gray-800 text-white text-lg p-2 rounded-lg border-none text-center"
+              placeholder="Timer Name"
+            />
+          </div>
+          <div className="space-y-4 mb-6">
+            <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+              <span className="text-red-500">High Intensity</span>
+              <input
+                type="number"
+                value={highIntensity}
+                onChange={(e) => setHighIntensity(Math.max(0, e.target.value))}
+                className="w-20 bg-gray-700 text-red-500 text-right p-1 rounded border-none"
+              />
+            </div>
+            <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+              <span className="text-green-500">Low Intensity</span>
+              <input
+                type="number"
+                value={lowIntensity}
+                onChange={(e) => setLowIntensity(Math.max(0, e.target.value))}
+                className="w-20 bg-gray-700 text-green-500 text-right p-1 rounded border-none"
+              />
+            </div>
+            <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+              <span className="text-white">Circuits</span>
+              <input
+                type="number"
+                value={circuits}
+                onChange={(e) => setCircuits(Math.max(1, e.target.value))}
+                className="w-20 bg-gray-700 text-white text-right p-1 rounded border-none"
+              />
+            </div>
+            <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+              <span className="text-blue-500">Warmup (optional)</span>
+              <input
+                type="number"
+                value={warmup}
+                onChange={(e) => setWarmup(Math.max(0, e.target.value))}
+                className="w-20 bg-gray-700 text-blue-500 text-right p-1 rounded border-none"
+              />
+            </div>
+            <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+              <span className="text-yellow-500">Cooldown (optional)</span>
+              <input
+                type="number"
+                value={cooldown}
+                onChange={(e) => setCooldown(Math.max(0, e.target.value))}
+                className="w-20 bg-gray-700 text-yellow-500 text-right p-1 rounded border-none"
+              />
+            </div>
+          </div>
+          <div className="text-center">
+            <span className="text-red-500 text-xl font-bold">Total Time: {formatTime(totalTime)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default App;
