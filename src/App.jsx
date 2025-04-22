@@ -13,6 +13,27 @@ const App = () => {
   const [currentPhase, setCurrentPhase] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [currentCircuit, setCurrentCircuit] = useState(0);
+  const [currentExercise, setCurrentExercise] = useState('');
+  const [availableExercises, setAvailableExercises] = useState(['mountain climb', 'push up', 'plank', 'jumping jack', 'squat']);
+  const [lastExercise, setLastExercise] = useState('');
+
+  const selectExercise = () => {
+    if (availableExercises.length === 0) {
+      // Reset pool, excluding the last exercise to avoid back-to-back
+      const newPool = ['mountain climb', 'push up', 'plank', 'jumping jack', 'squat'].filter(
+        (ex) => ex !== lastExercise
+      );
+      setAvailableExercises(newPool);
+    }
+    // Pick a random exercise from the available pool
+    const remainingExercises = availableExercises.filter((ex) => ex !== lastExercise);
+    const randomIndex = Math.floor(Math.random() * remainingExercises.length);
+    const selected = remainingExercises[randomIndex] || availableExercises[0]; // Fallback if empty
+    // Update available exercises
+    setAvailableExercises((prev) => prev.filter((ex) => ex !== selected));
+    setLastExercise(selected);
+    return selected;
+  };
 
   useEffect(() => {
     const savedTimer = localStorage.getItem('hiitTimer');
@@ -41,6 +62,7 @@ const App = () => {
         if (prev <= 1) {
           if (currentPhase === 'warmup' && warmup > 0) {
             setCurrentPhase('high');
+            setCurrentExercise(selectExercise());
             setTimeLeft(highIntensity);
           } else if (currentPhase === 'high') {
             setCurrentPhase('low');
@@ -49,6 +71,7 @@ const App = () => {
             if (currentCircuit < circuits - 1) {
               setCurrentCircuit((prev) => prev + 1);
               setCurrentPhase('high');
+              setCurrentExercise(selectExercise());
               setTimeLeft(highIntensity);
             } else if (cooldown > 0) {
               setCurrentPhase('cooldown');
@@ -56,11 +79,17 @@ const App = () => {
             } else {
               setIsRunning(false);
               setCurrentPhase(null);
+              setCurrentExercise('');
+              setAvailableExercises(['mountain climb', 'push up', 'plank', 'jumping jack', 'squat']);
+              setLastExercise('');
               return 0;
             }
           } else if (currentPhase === 'cooldown') {
             setIsRunning(false);
             setCurrentPhase(null);
+            setCurrentExercise('');
+            setAvailableExercises(['mountain climb', 'push up', 'plank', 'jumping jack', 'squat']);
+            setLastExercise('');
             return 0;
           }
           return prev - 1;
@@ -91,11 +120,14 @@ const App = () => {
       localStorage.setItem('hiitTimer', JSON.stringify(timerConfig));
       setIsRunning(true);
       setCurrentCircuit(0);
+      setAvailableExercises(['mountain climb', 'push up', 'plank', 'jumping jack', 'squat']);
+      setLastExercise('');
       if (warmup > 0) {
         setCurrentPhase('warmup');
         setTimeLeft(warmup);
       } else {
         setCurrentPhase('high');
+        setCurrentExercise(selectExercise());
         setTimeLeft(highIntensity);
       }
     }
@@ -106,6 +138,9 @@ const App = () => {
     setCurrentPhase(null);
     setTimeLeft(0);
     setCurrentCircuit(0);
+    setCurrentExercise('');
+    setAvailableExercises(['mountain climb', 'push up', 'plank', 'jumping jack', 'squat']);
+    setLastExercise('');
   };
 
   const phaseColors = {
@@ -113,6 +148,13 @@ const App = () => {
     high: 'text-red-500',
     low: 'text-green-500',
     cooldown: 'text-yellow-500',
+  };
+
+  const getDisplayPhase = () => {
+    if (currentPhase === 'high') {
+      return currentExercise.toUpperCase();
+    }
+    return currentPhase?.toUpperCase();
   };
 
   return (
@@ -136,7 +178,7 @@ const App = () => {
       {isRunning && (
         <div className="text-center mb-6">
           <div className={`text-4xl font-bold ${phaseColors[currentPhase]}`}>
-            {currentPhase?.toUpperCase()}: {formatTime(timeLeft)}
+            {getDisplayPhase()}: {formatTime(timeLeft)}
           </div>
           <div className="text-lg text-gray-400">
             Circuit {currentCircuit + 1} of {circuits}
